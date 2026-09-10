@@ -109,6 +109,7 @@ docker run -p 8787:8787 gpt-hansard-11m
 | `sft_v3_en.py` | SFT v3 trainer: EN-locked, scheduled LR, replay/val gauges, periodic checkpoint + resume |
 | `eval_hansard.py` | Eval suite: held-out ppl, held-out Q/A, register, distinct-2 |
 | `probe_garble.py` | Deterministic red/green probe for answer quality (codebook check + generation metrics) |
+| `eos_probe.py` | Measures whether the model ends answers itself or runs to budget (foregrounds the sentence-conclusion decode fix) |
 | `mine_qp.py` | Mined the 70k Q→A pairs from Hansard |
 | `prompt_hansard.py` `gen_local.py` `space-app.py` | Generation/demo paths |
 | `publish_model.py` `publish_sft.py` `upload_hf.py` | Hugging Face publication (token via `HF_TOKEN`, never on disk) |
