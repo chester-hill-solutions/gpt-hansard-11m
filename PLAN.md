@@ -63,6 +63,57 @@ contention. Verdict to follow: probe + `eval_hansard.py` vs the old SFTs.
 
 ---
 
+## 0c. The ~100M scale-up — Sep 9 (forecast before the run)
+
+**Why:** the 11M SFT-v3 recipe is proven (probe GREEN, EN-locked, register +
+grammar + topical conditioning) but hits the fact-memory wall: it confabulates
+("Five Eyes…", "Falun Gong…", "$400M budget") rather than answering from the
+corpus. Facts need capacity; the next measured run is the **same recipe at
+~100M params**, judged by the same probe + eval suite.
+
+**Config (target ~100M, tied embeddings):**
+| | 11M (today) | ~100M (proposed) |
+|---|---|---|
+| layers | 6 | 12 |
+| heads | 6 | 12 |
+| n_embd | 384 | 768 |
+| block | 512 | 1024 |
+| vocab | 1280 (same tokenizer — keeps merges/streams valid) | 1280 |
+| params | 11.33M | ~88–92M |
+
+**Data and recipe — unchanged, on purpose:**
+- Pretrain: EN `tokens.bin` (258.2M-token stream) — same as the 11M EN base.
+  No corpus change until the §2b census freeze; this isolates the **capacity**
+  variable.
+- SFT: `sft_v3_en.py` recipe as-is (EN-locked 35,401 pairs, warmup + cosine
+  1e-4→1e-5, replay/val gauges, checkpoint+resume). Steps scale ~2–3× for
+  capacity (≈6–9k steps ≈ 1.5 epochs on the same stream).
+
+**Compute forecast (recorded Sep 9, before running):**
+- Colab T4 (16GB, fp16): ~258M tokens × 90M params ≈ **4×10¹⁶ FLOPs/epoch**
+  → est **75–100 h/epoch** ⇒ full run 2.5–4 days. Single-T4 is impractical
+  for iteration.
+- **Recommended:** Kaggle 2×T4 (DDP) or Colab L4/A100 — est **14–24 h** for
+  the full pretrain + SFT. Pick one when we commit; the forecast is the
+  measured claim, not the machine.
+
+**Success criteria (measured, non-negotiable):**
+1. Probe GREEN on `gpt-100m-sft-en-v3.pt` incl. the Faries USER prompt —
+   d2 ≥ 0.45 at T=0.7, reg=1, fr=0.00.
+2. `eval_hansard.py` held-out ppl **below** the 11M's (11M number to be
+   recorded when the v3 A/B completes — fill in here).
+3. Distinct-2 over the eval pool ≥ 0.45 (vs 11M's number, TBD) — repetition
+   loops must not reappear at scale.
+4. Factual spot-check: "What is the excuse for this government's inaction on
+   Faries?" must surface the actual Five Eyes/CNS allegations content from
+   the 2013 QP record, not generic boilerplate.
+
+**Deferred (unchanged):** naming prefixes (≥50M-param rule now satisfied, but
+only after criterion 1–2 pass); bilingual SFT (separate FR checkpoint, never
+mixed); DPO after facts exist.
+
+---
+
 ## 1. The module ladder (what comes next)
 
 ### Module 6 — The raw capstone (finishing now)
@@ -218,5 +269,4 @@ Printer states it verbatim); ON/QC/MB/NB laws are bilingual by law.
 - **Corpus cap policy (Sep 9):** harvest-to-cap then prune at freeze — QC JD commissions tracks ~3B chars (FR-native, 12,706 sittings ~237K each); Alberta CKAN est ~7B; in-flight lanes run to completion, dedupe/prune at freeze to fit ~5B-token budget; disk (24G free) is the only live constraint, Alberta CKAN is the pruning trigger.
 - **v3b target (Sep 9): 500M @ 1.5 epochs, params = 1.5×D/20 capped at 500M.** Census now 18.33B chars ≈ 5.9B tokens @3.12 chars/token (plan's Sep 8 §2b figures are stale — >3× growth). Requirement: D_honest ≥ 6.7B for full 500M; 'reliable' floor ~5.5–6B. Freeze gate: mini-census + real dedupe with the v3 tokenizer → set params from measured honest D (6.7B→500M, 6.0B→450M, 5.5B→412M, 5.0B→375M, 4.5B→337M). Alberta CKAN (~2B tokens) is the swing variable; queued lanes (budgets/school boards/manuals) are the expansion knob.
 - **v3b target refinement (Sep 9): 500M @ 1 epoch is ideal → D = 10B honest tokens.** Freeze gate becomes params = D_honest/20 (single epoch, never undertrained). Current bank = ~5.9B raw (18.33B chars ÷ 3.12); full fleet landing → ~7–8.5B honest → 350–425M. Full 500M needs the EXPANSION PORTFOLIO (~+2–4B: regulatory decision bodies, securities regulators, school boards, budgets, departmental manuals, municipal fleet) → outer band ~9.5–11B honest. Most likely honest outcome 400–450M @ 1 epoch unless portfolio lands high. 1.5-epoch fallback (params=1.5D/20) stands if D lands <6.7B.
-- **QC municipal FR pivot (Sep 9):** user directive — dive deep in Quebec for French, municipal/sub-municipal = gold. DISCOVERY-O cracked Montréal ADI portal: city council + 19 boroughs, static HTML year-paged, direct PDFs (typeDoc=pv/da), ~15-30K FR PDFs back to ~2001, curl-OK no WAF. Ranks: 1 Montréal ADI, 2 BAPE (460 dossiers, huge FR reports), 3 OCPM consultations, 4 Longueuil static PVs. Skip: Laval/Gatineau/QC-cities (JS or low-coherence), donnees.montreal CKAN (no PV datasets).
-- **QC municipal FR builds (Sep 9):** MTL-ADI ✅ running (5,119 docs pv+da, city+19 boroughs, ~745M chars tracking — fetcher fetch_montreal_adi.py); BAPE ✅ running (461 dossiers → 7,362 vault docs, ~300M+ tracking — fetch_bape.py); OCPM ✅ running (58 consultations → thousands of docs — fetch_ocpm.py); Longueuil ✅ running (196 PV/ODJ — fetch_longueuil.py). Deep French municipal/sub-municipal seam flowing.
+- **Audit Wave-1 builds (Sep 9):** SK Hansard 🔄 (1947→present, ~8-12K docs, tracking 1.5-2B — archive paginated; fetch_sk_hansard.py); Ontario Gazette ✅ done (1,385 issues, 490.7M); NB FR regs ✅ done (1,169 docs, 102.9M — the year-walk fix); OSC 🔄 (15,259 decisions); audit doc DISCOVERY-AUDIT.md ranks the remaining waves (CRTC/CER/Tax/LOP/LègisQuebec via Wayback etc.)

@@ -5,10 +5,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from huggingface_hub import hf_hub_download
 
-CKPT = hf_hub_download("NathanielArfin/gpt-hansard-11m", "gpt-11m-sft-bilingual.pt")
+CKPT = hf_hub_download("NathanielArfin/gpt-hansard-11m", "gpt-11m-sft-en-v3.pt")
 ck = torch.load(CKPT, map_location="cpu")
 cfg = ck["config"]
 V, BLOCK = cfg["V"], cfg["block"]
+TOP_K = 40
 
 mm = {(a, b): ix for a, b, ix in ck["merges"]}
 tok_bytes = {i: bytes([i]) for i in range(256)}
@@ -112,6 +113,9 @@ def generate(prompt, temperature, max_new):
     idx = torch.from_numpy(encode_bpe(prompt))[None, :]
     for _ in range(int(max_new)):
         logits = model(idx[:, -BLOCK:])[:, -1, :]
+        if TOP_K:
+            v, _ = torch.topk(logits, TOP_K)
+            logits[logits < v[:, [-1]]] = float("-inf")
         idx = torch.cat([idx, torch.multinomial(
             F.softmax(logits / max(0.05, temperature), dim=-1), 1)], dim=1)
     return decode_bpe(idx[0].tolist())
@@ -123,15 +127,16 @@ with gr.Blocks(title="Hansard Chat") as demo:
 **GPT-Hansard-11M** — a GPT built from scratch ({N_PARAMS:,} params) and trained
 on 20 years of the Canadian House of Commons (Hansard, 2006–2026), then
 fine-tuned on 70,808 real Question Period exchanges.
-It answers in the language of your question (EN/FR). Everything it knows came
-from the parliamentary record — nothing else.
+It speaks the register of Question Period in English (the EN version of the
+model — French prompts stay in the letter of the law, not the spirit).
+Everything it knows came from the parliamentary record — nothing else.
 Dataset: `NathanielArfin/canadian-hansard-2006-now`""")
     with gr.Row():
         with gr.Column():
             prompt = gr.Textbox(label="Prompt",
                                 value="Q: What is prorogation?\nA:",
                                 lines=3)
-            temp = gr.Slider(0.2, 1.5, value=0.7, label="Temperature")
+            temp = gr.Slider(0.2, 1.5, value=0.6, label="Temperature")
             max_new = gr.Slider(30, 300, value=140, step=10, label="Max new tokens")
             btn = gr.Button("Speak, Minister")
         with gr.Column():

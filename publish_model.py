@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parent
 MODEL = "NathanielArfin/gpt-hansard-11m"
 SPACE = "NathanielArfin/hansard-chat"
 
-api = HfApi(token=os.environ["HF_TOKEN"])
+api = HfApi(token=os.environ.get("HF_TOKEN"))  # None -> use stored/active token
 stage = sys.argv[1] if len(sys.argv) > 1 else "all"
 
 

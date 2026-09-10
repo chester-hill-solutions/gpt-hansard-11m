@@ -28,7 +28,7 @@ ap.add_argument("--from", dest="src_root", default=Path(__file__).resolve().pare
 args = ap.parse_args()
 
 SRC = Path(args.src_root)
-api = HfApi(token=os.environ["HF_TOKEN"])
+api = HfApi(token=os.environ.get("HF_TOKEN"))  # None -> use stored/active token
 
 REPO_FILES = [  # (source path, destination path, repo, repo_type)
     ("gpt-11m-sft-en.pt", "gpt-11m-sft-en.pt", MODEL_REPO, "model"),

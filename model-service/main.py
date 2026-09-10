@@ -27,7 +27,7 @@ torch.set_num_threads(int(os.environ.get("TORCH_THREADS", "2")))
 
 HF_URL = ("https://huggingface.co/NathanielArfin/gpt-hansard-11m/"
           "resolve/main/gpt-11m-sft-bilingual-named.pt")
-CKPT_PATH = os.environ.get("CKPT_PATH", "/app/gpt-11m-sft-bilingual-named.pt")
+CKPT_PATH = os.environ.get("CKPT_PATH", "/app/gpt-11m-sft-en-v3.pt")
 PORT = int(os.environ.get("PORT", 8787))
 
 # ---------------------------------------------------------------- model ----
@@ -162,7 +162,7 @@ def decode_bpe(ids):
 
 
 @torch.no_grad()
-def generate(prompt, temperature=0.7, max_new=140, rep=1.15):
+def generate(prompt, temperature=0.6, max_new=140, rep=1.15, top_k=40):
     with LOCK:
         idx = torch.from_numpy(encode_bpe(prompt))[None, :]
         budget = max(1, min(int(max_new), 200))
@@ -176,6 +176,9 @@ def generate(prompt, temperature=0.7, max_new=140, rep=1.15):
                     lg = logits[0, t].item()
                     if lg > 0:
                         logits[0, t] = lg - rep * lg
+            if top_k and top_k > 0:
+                v, _ = torch.topk(logits, top_k)
+                logits[logits < v[:, [-1]]] = float("-inf")
             nxt = int(torch.multinomial(F.softmax(logits / max(0.05, temperature), dim=-1), 1))
             recent.append(nxt)
             out.append(nxt)
@@ -280,7 +283,7 @@ class Handler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", 0))
             req = json.loads(self.rfile.read(length))
             text = generate(req.get("prompt", ""),
-                            float(req.get("temperature", 0.7)),
+                            float(req.get("temperature", 0.6)),
                             int(req.get("max_new", 140)),
                             float(req.get("repetition_penalty", 1.15)))
             body = json.dumps({"text": text}).encode()
