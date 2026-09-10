@@ -26,7 +26,7 @@ from home import PAGE
 torch.set_num_threads(int(os.environ.get("TORCH_THREADS", "2")))
 
 HF_URL = ("https://huggingface.co/NathanielArfin/gpt-hansard-11m/"
-          "resolve/main/gpt-11m-sft-bilingual-named.pt")
+          "resolve/main/gpt-11m-sft-en-v3.pt")
 CKPT_PATH = os.environ.get("CKPT_PATH", "/app/gpt-11m-sft-en-v3.pt")
 PORT = int(os.environ.get("PORT", 8787))
 

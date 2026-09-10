@@ -14,13 +14,15 @@ PAGE = """<!doctype html>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Cpolygon points='25,96 95,96 88,72 32,72' fill='%238a5a2b'/%3E%3Ccircle cx='60' cy='48' r='24' fill='%236f4a23'/%3E%3Ccircle cx='40' cy='30' r='7' fill='%236f4a23'/%3E%3Ccircle cx='80' cy='30' r='7' fill='%236f4a23'/%3E%3Cellipse cx='60' cy='60' rx='13' ry='9' fill='%23a9773f'/%3E%3Crect x='55' y='63' width='4' height='9' rx='1' fill='%23fff'/%3E%3Crect x='61' y='63' width='4' height='9' rx='1' fill='%23fff'/%3E%3Cellipse cx='60' cy='53' rx='5' ry='3.5' fill='%232b2014'/%3E%3Ccircle cx='50' cy='44' r='2.6' fill='%232b2014'/%3E%3Ccircle cx='70' cy='44' r='2.6' fill='%232b2014'/%3E%3C/svg%3E">
 <style>
   :root {
-    --ink:#292d38; --ink-muted:#6f7684; --red:#c8102e; --bg:#f7f7f5; --card:#ffffff;
+    --ink:#292d38; --ink-muted:#575e6d; --red:#c8102e; --bg:#f7f7f5; --card:#ffffff;
     --line:#e4e6ea; --ok:#1a7f4e; --fur:#6f4a23; --fur-light:#a9773f; --wood:#8a5a2b;
   }
   @media (prefers-color-scheme: dark) {
     :root { --ink:#e7e9ee; --ink-muted:#9aa1ad; --bg:#161920; --card:#1e222c; --line:#2c3140; }
   }
   * { box-sizing:border-box; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden;
+             clip:rect(0 0 0 0); white-space:nowrap; border:0; }
   html, body { height:100%; }
   body { margin:0; font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
          color:var(--ink); background:var(--bg);
@@ -35,6 +37,7 @@ PAGE = """<!doctype html>
   header p { margin:2px 0 0; font-size:11.5px; color:var(--ink-muted); }
   header a.cardlink { font-size:11.5px; color:var(--ink-muted); text-decoration:none; white-space:nowrap; }
   header a.cardlink:hover { color:var(--red); text-decoration:underline; }
+  :focus-visible { outline:2px solid var(--red); outline-offset:2px; }
   #log { flex:1; overflow-y:auto; padding:20px 20px 10px; scroll-behavior:smooth; }
   .wrap { max-width:860px; margin:0 auto; display:flex; flex-direction:column; gap:16px; }
   .welcome { padding:4px 2px 0; }
@@ -71,20 +74,25 @@ PAGE = """<!doctype html>
   textarea { width:100%; resize:none; border:0; background:transparent; font:inherit; color:var(--ink);
              max-height:120px; outline:none; }
   .under { display:flex; align-items:center; gap:8px; margin-top:6px; flex-wrap:wrap; }
-  .seg { display:flex; border:1px solid var(--line); border-radius:9px; overflow:hidden; }
-  .seg button { border:0; background:transparent; font-size:11px; font-weight:650; padding:5px 10px;
+  .seg { display:flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .seg button { border:0; background:transparent; font-size:11.5px; font-weight:650; padding:0 12px; min-height:44px;
                 cursor:pointer; color:var(--ink-muted); }
   .seg button.on { background:color-mix(in srgb, var(--red) 10%, transparent); color:var(--red); }
   .hint { font-size:10.5px; color:var(--ink-muted); }
   .send { margin-left:auto; border:0; border-radius:10px; background:var(--red); color:#fff; font-weight:700;
-          font-size:13px; padding:8px 14px; cursor:pointer; }
+          font-size:13px; padding:10px 22px; min-height:44px; cursor:pointer; }
   .send[disabled] { opacity:.45; cursor:default; }
   .stop { display:none; border:0; border-radius:10px; background:transparent; color:var(--ink-muted);
-          font-size:12.5px; cursor:pointer; border:1px solid var(--line); padding:8px 12px; }
+          font-size:12.5px; cursor:pointer; border:1px solid var(--line); padding:10px 16px; min-height:44px; }
+  .errorbox { display:none; border:1px solid color-mix(in srgb, var(--red) 45%, var(--line));
+              background:color-mix(in srgb, var(--red) 8%, var(--card)); color:var(--ink);
+              font-size:12.5px; border-radius:10px; padding:10px 14px; margin:10px 0; gap:10px; align-items:center; }
+  .errorbox button { border:0; border-radius:8px; background:var(--red); color:#fff; font-weight:700;
+                     font-size:12px; padding:8px 16px; min-height:44px; cursor:pointer; white-space:nowrap; }
   footer { text-align:center; font-size:10.5px; color:var(--ink-muted); padding:0 16px 10px; }
   footer a { color:inherit; }
-  .tabs { display:flex; gap:4px; }
-  .tabs button { border:1px solid var(--line); background:transparent; color:var(--ink-muted); font-size:11.5px; font-weight:650; padding:5px 10px; border-radius:8px; cursor:pointer; }
+  .tabs { display:flex; gap:6px; }
+  .tabs button { border:1px solid var(--line); background:transparent; color:var(--ink-muted); font-size:12px; font-weight:650; padding:0 12px; min-height:44px; border-radius:9px; cursor:pointer; }
   .tabs button.on { background:var(--ink); color:var(--bg); border-color:var(--ink); }
   .attbox { max-width:900px; margin:0 auto; }
   .attbox textarea { width:100%; border:1px solid var(--line); border-radius:10px; padding:10px 12px; font:inherit; color:var(--ink); background:var(--card); min-height:60px; resize:vertical; }
@@ -147,18 +155,19 @@ PAGE = """<!doctype html>
   <a class="cardlink" href="https://huggingface.co/NathanielArfin/gpt-hansard-11m" target="_blank" rel="noopener">Model card ↗</a>
 </header>
 <div id="chatview" style="display:flex;flex-direction:column;flex:1;min-height:0;">
-<div id="log"><div class="wrap" id="feed"></div></div>
+<div id="log" role="log" aria-live="polite" aria-busy="false" aria-label="Chat transcript"><div class="wrap" id="feed"></div></div>
 <div class="composer">
   <div class="box">
+    <label class="sr-only" for="p">Ask Parliament a question</label>
     <textarea id="p" rows="1" placeholder="Ask Parliament a question…"></textarea>
     <div class="under">
-      <div class="seg" id="mode">
-        <button class="on" data-m="question" type="button">Question</button>
-        <button data-m="continue" type="button">Continue</button>
+      <div class="seg" id="mode" aria-label="Prompt mode">
+        <button class="on" data-m="question" type="button" aria-pressed="true">Question</button>
+        <button data-m="continue" type="button" aria-pressed="false">Continue</button>
       </div>
       <span class="knobs">
-        <span class="pill">temp <input id="temp" type="range" min="0.2" max="1.5" step="0.05" value="0.5"><b id="tempv">0.50</b></span>
-        <span class="pill">max tokens <input id="len" type="range" min="40" max="200" step="10" value="120"><b id="lenv">120</b></span>
+        <label class="pill" for="temp">temp <input id="temp" type="range" min="0.2" max="1.5" step="0.05" value="0.6"><b id="tempv">0.60</b></label>
+        <label class="pill" for="len">max tokens <input id="len" type="range" min="40" max="200" step="10" value="120"><b id="lenv">120</b></label>
       </span>
       <span class="hint" id="modehint">the model sees Q:/A:, as in training</span>
       <button class="stop" id="stop" type="button">Stop</button>
@@ -166,19 +175,26 @@ PAGE = """<!doctype html>
     </div>
   </div>
 </div>
-<footer>11.33M parameters · closed-book: trained only on the official Debates of the House of Commons · <a href="https://huggingface.co/datasets/NathanielArfin/canadian-hansard-2006-now" target="_blank" rel="noopener">dataset</a></footer>
+<div class="errorbox" id="errbox" role="alert">
+  <span id="errmsg"></span>
+  <button id="errretry" type="button">Try again</button>
+</div>
+<footer>11.33M parameters · closed-book: trained only on the official Debates of the House of Commons · <a href="https://huggingface.co/datasets/NathanielArfin/canadian-hansard-2006-now" target="_blank" rel="noopener">dataset</a> · <a href="https://huggingface.co/NathanielArfin/gpt-hansard-11m" target="_blank" rel="noopener">model card</a></footer>
 <script>
 const feed = document.getElementById('feed'), log = document.getElementById('log');
 const ta = document.getElementById('p'), send = document.getElementById('send'), stopBtn = document.getElementById('stop');
 const modeHint = document.getElementById('modehint');
-let controller = null, mode = 'question';
+const errbox = document.getElementById('errbox'), errmsg = document.getElementById('errmsg');
+const errretry = document.getElementById('errretry');
+const chatlog = document.getElementById('log');
+let controller = null, mode = 'question', lastRaw = null, lastMode = 'question';
 
 const EXAMPLES = [
   ["The excuse machine", "What is the excuse for this government's inaction on Faries?", "question"],
   ["Gas prices", "What will the Prime Minister do about energy prices?", "question"],
-  ["Hostile question", "What is prorogation?", "question"],
   ["Never in its training", "What is a filibuster?", "question"],
-  ["En français", "Qu'est-ce que le Hansard ?", "question"],
+  ["Definition", "What is prorogation?", "question"],
+  ["FR in → EN out (EN-locked)", "Qu'est-ce que le Hansard ?", "question"],
   ["Continue a speech", "Mr. Speaker, the cost of housing", "continue"],
 ];
 
@@ -191,7 +207,11 @@ function scrollDown(force) { if (force || nearBottom()) log.scrollTop = log.scro
 
 function setMode(m) {
   mode = m;
-  document.querySelectorAll('#mode button').forEach(b => b.classList.toggle('on', b.dataset.m === m));
+  document.querySelectorAll('#mode button').forEach(b => {
+    const on = b.dataset.m === m;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
   modeHint.textContent = m === 'question' ? 'the model sees Q:/A:, as in training'
                                           : 'raw continuation, the model keeps talking';
 }
@@ -201,9 +221,9 @@ function welcome() {
   const el = document.createElement('div');
   el.className = 'welcome';
   el.innerHTML = '<h2>Ask the House.</h2><p>An 11.33M-parameter GPT, trained from scratch on twenty years of the ' +
-    'official Debates of the Canadian House of Commons, then fine-tuned on 70,808 real Question Period exchanges. ' +
-    'Just ask; the Q:/A: scaffolding is handled for you. It answers in the language of the question, and its only ' +
-    'knowledge is the parliamentary record.</p>';
+    'official Debates of the Canadian House of Commons, then fine-tuned on 35,401 question→answer exchanges ' +
+    'mined from the record (EN-locked). Just ask; the Q:/A: scaffolding is handled for you. This build answers ' +
+    'in Parliament\u2019s register — whatever language the question arrives in.</p>';
   const grid = document.createElement('div');
   grid.className = 'examples';
   for (const [tag, p, m] of EXAMPLES) {
@@ -274,11 +294,14 @@ document.getElementById('len').addEventListener('input', (e) => document.getElem
 async function doSend() {
   const raw = ta.value.trim();
   if (!raw || controller) return;
+  lastRaw = raw; lastMode = mode;
   document.querySelector('.welcome')?.remove();
+  hideError();
   addBubble('user', raw);
   const pending = addBubble('model pending', '');
   pending.msg.innerHTML = '<span class="dots"><span></span><span></span><span></span></span>';
   send.disabled = true; stopBtn.style.display = 'inline-block';
+  chatlog.setAttribute('aria-busy', 'true');
   controller = new AbortController();
   const t0 = performance.now();
   try {
@@ -312,13 +335,31 @@ async function doSend() {
     addMeta('GPT-Hansard-11M · ' + dt + 's' + (mode === 'continue' ? ' · continuation' : ''), raw + d.text);
   } catch (err) {
     pending.msg.classList.remove('pending');
-    pending.msg.textContent = (err.name === 'AbortError') ? '— stopped —'
-      : (err.message === 'Failed to fetch' ? 'Can\\'t reach the model. It may be restarting, try again in a minute.'
-                                           : ('Error: ' + err.message));
+    pending.msg.textContent = '';
+    pending.row.remove();
+    if (err.name === 'AbortError') {
+      addBubble('model', '— stopped —');
+    } else {
+      showError(err.message === 'Failed to fetch'
+        ? 'Can\\'t reach the model. It may be restarting — try again.'
+        : 'Error: ' + err.message);
+    }
   }
   send.disabled = false; stopBtn.style.display = 'none'; controller = null;
+  chatlog.setAttribute('aria-busy', 'false');
   scrollDown();
 }
+function showError(msg) {
+  errmsg.textContent = msg;
+  errbox.style.display = 'flex';
+}
+function hideError() {
+  errbox.style.display = 'none';
+}
+errretry.addEventListener('click', () => {
+  hideError();
+  if (lastRaw) { ta.value = lastRaw; setMode(lastMode); ta.dispatchEvent(new Event('input')); autosize(); doSend(); }
+});
 stopBtn.addEventListener('click', () => controller?.abort());
 send.addEventListener('click', doSend);
 ta.focus();
