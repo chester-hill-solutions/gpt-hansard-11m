@@ -1,0 +1,70 @@
+{
+  "vocab": 1280,
+  "merges": 1024,
+  "sessions": [
+    {
+      "session": "39-1",
+      "chars": 61001673,
+      "tokens": 19443877
+    },
+    {
+      "session": "39-2",
+      "chars": 40307484,
+      "tokens": 12846491
+    },
+    {
+      "session": "40-1",
+      "chars": 3448594,
+      "tokens": 1089384
+    },
+    {
+      "session": "40-2",
+      "chars": 43862455,
+      "tokens": 14023215
+    },
+    {
+      "session": "40-3",
+      "chars": 50989069,
+      "tokens": 16324263
+    },
+    {
+      "session": "41-1",
+      "chars": 100068397,
+      "tokens": 31935198
+    },
+    {
+      "session": "41-2",
+      "chars": 83456958,
+      "tokens": 26727901
+    },
+    {
+      "session": "42-1",
+      "chars": 158762490,
+      "tokens": 50868575
+    },
+    {
+      "session": "43-1",
+      "chars": 14676474,
+      "tokens": 4682990
+    },
+    {
+      "session": "43-2",
+      "chars": 47820066,
+      "tokens": 15362512
+    },
+    {
+      "session": "44-1",
+      "chars": 151198238,
+      "tokens": 48516388
+    },
+    {
+      "session": "45-1",
+      "chars": 50610897,
+      "tokens": 16353285
+    }
+  ],
+  "total_chars": 806202795,
+  "total_tokens": 258174079,
+  "chars_per_token": 3.123,
+  "tokens_file": "tokens.bin"
+}

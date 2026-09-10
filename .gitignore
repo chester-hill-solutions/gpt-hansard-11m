@@ -1,0 +1,41 @@
+# Corpora / large regenerable data (excluded: too big for GitHub, or derivable)
+browserfetch/
+hansard/
+hansard-bilingual.txt
+committees/
+senate/
+gazette/
+wayback/
+statutes/
+municipal/
+newbrunswick/
+statcan/
+journals/
+ontario/
+nunavut/
+manitoba/
+tbs/
+alberta/
+education/
+academy/
+decisia/
+decisions/
+internalreports/
+inventory/
+committee-reports/
+tokens.bin
+tokens.keep
+sft-stream.bin
+sft-stream.bin.labels
+*.log
+
+# Local harness artifacts
+CLIPBOARD.md
+.agent/
+.repl/
+
+# Blobs restored by `uv run fetch_assets.py` — never commit these
+gpt-11m-*.pt
+sft-stream-*.bin
+sft-stream-*.labels
+sft/qp-pairs.jsonl
