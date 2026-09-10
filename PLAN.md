@@ -61,6 +61,33 @@ checkpoint + resume every 500 steps. Step 300+: task 1.69–1.82 (vs the old
 run's flat 2.1–2.6), replay ~2.0 (no forgetting). ETA ~01:40 ET under
 contention. Verdict to follow: probe + `eval_hansard.py` vs the old SFTs.
 
+**VERDICT (delivered Sep 9, 21:30 ET) — probe + eval A/B, same seeds:**
+- Probe: **RED only on the base model** (FR greedy loop, expected); every SFT
+  checkpoint GREEN. v3: fr=0.00 on EN/FR/USER, reg=1/1/1, Faries T=0.7 d2=0.58.
+- Eval A/B (identical 6 held-out Qs, same seed):
+  | | sft-en (old) | sft-en-v3 |
+  |---|---|---|
+  | held-out ppl | 8.5 (0.991 bpc) | 8.7 (0.999 bpc) |
+  | register | 6/6 | 6/6 |
+  | avg len | 294 | 312 |
+  | distinct-2 | 0.88 | 0.78 |
+- **The honest read:** ppl is a wash (v3 is +0.008 bpc — expected: 10× more SFT
+  steps moves it off the base; ppl was never the referee). The v3 win is
+  **behavioral**: full QP attribution ("Hon. X (Minister of Y, Party):"),
+  topic-tracking per question (finance Q → finance answer, heritage Q →
+  official-languages answer, Ukraine/C-57 → ministers's commitment), no
+  invented words/no `[English]` artifacts — vs the old model's off-topic drift
+  ("the fishery", "Controactivity is an issue of revenue"). The Faries
+  question through the published Space path: grammatical PM-attribution
+  answer that tracks the food-inspection/firearms territory the name sits in
+  — facts still confabulated (the capacity wall §0c exists for this).
+- Demo: Space + service now point at v3 with temp 0.6 / top-k 40 (deployed).
+- Publication: repo `chester-hill-solutions/gpt-hansard-11m` is code+docs+
+  `ASSETS.md` pointers; blobs on HF (model + `gpt-hansard-11m-sft` dataset).
+  `hf auth login --token` requires a *User Access Token*, not the OAuth
+  device code — the login that worked was `hf auth login` (browser OAuth,
+  prints an 8-char code in harness terminals).
+
 ---
 
 ## 0c. The ~100M scale-up — Sep 9 (forecast before the run)
@@ -100,10 +127,13 @@ corpus. Facts need capacity; the next measured run is the **same recipe at
 **Success criteria (measured, non-negotiable):**
 1. Probe GREEN on `gpt-100m-sft-en-v3.pt` incl. the Faries USER prompt —
    d2 ≥ 0.45 at T=0.7, reg=1, fr=0.00.
-2. `eval_hansard.py` held-out ppl **below** the 11M's (11M number to be
-   recorded when the v3 A/B completes — fill in here).
-3. Distinct-2 over the eval pool ≥ 0.45 (vs 11M's number, TBD) — repetition
-   loops must not reappear at scale.
+2. `eval_hansard.py` held-out ppl **at or below** the 11M's 8.7 (0.999 bpc,
+   measured Sep 9) — a wash here tells as much as a win: the 11M lost 0.008
+   bpc to the base by taking 3,000 SFT steps.
+3. Distinct-2 over the eval pool **≥ 0.78** (the 11M v3's measured value),
+   and — critically — the *behavioral* bar: topic-tracking per question and
+   full QP attribution, not just register (that's where the 11M v3 beat its
+   old SFT despite tied ppl).
 4. Factual spot-check: "What is the excuse for this government's inaction on
    Faries?" must surface the actual Five Eyes/CNS allegations content from
    the 2013 QP record, not generic boilerplate.
