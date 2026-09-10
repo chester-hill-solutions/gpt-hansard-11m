@@ -162,7 +162,16 @@ def decode_bpe(ids):
 
 
 @torch.no_grad()
-def generate(prompt, temperature=0.6, max_new=140, rep=1.15, top_k=40):
+def generate(prompt, temperature=0.6, max_new=120, rep=1.15, top_k=40, extend=96):
+    """Generate, then keep decoding past max_new in a short capped window so the
+    answer ends at a completed sentence, not a dangling clause.
+
+    Measured (eos_probe, 12 seeds): the model never emits its own \x00 separator
+    or a next-Q scaffold — "conclusion" wasn't learned — so the budget clip was
+    leaving the UI mid-sentence. Extending until terminal punctuation (with a
+    hard cap), then falling back to cutting at the last completed sentence,
+    makes the output read as concluded.
+    """
     with LOCK:
         idx = torch.from_numpy(encode_bpe(prompt))[None, :]
         budget = max(1, min(int(max_new), 200))
@@ -187,10 +196,34 @@ def generate(prompt, temperature=0.6, max_new=140, rep=1.15, top_k=40):
         cut = text.find("\nQ:")               # stop cleanly if it scaffolds the next pair
         if cut != -1:
             text = text[:cut]
-        # a spent token budget lands mid-word — stop at the last finished sentence
+        # a spent token budget lands mid-sentence — extend to the next boundary
+        if not re.search(r"[.!?…][\"””']?\s*$", text) and not text.endswith(("…",)):
+            for _ in range(max(0, int(extend))):
+                logits = MODEL(idx[:, -MODEL.block:])[:, -1, :].clone()
+                logits[0, 0] = float("-inf")
+                if rep and rep > 1.0:
+                    for t in set(recent[-64:]):
+                        lg = logits[0, t].item()
+                        if lg > 0:
+                            logits[0, t] = lg - rep * lg
+                if top_k and top_k > 0:
+                    v, _ = torch.topk(logits, top_k)
+                    logits[logits < v[:, [-1]]] = float("-inf")
+                nxt = int(torch.multinomial(F.softmax(logits / max(0.05, temperature), dim=-1), 1))
+                recent.append(nxt)
+                out.append(nxt)
+                idx = torch.cat([idx, torch.tensor([[nxt]])], dim=1)
+                text = decode_bpe(out).replace("\x00", "").strip()
+                if re.search(r"[.!?…][\"””']?\s*$", text) or "\nQ:" in text:
+                    break
+            cut = text.find("\nQ:")
+            if cut != -1:
+                text = text[:cut]
+        # extension cap exhausted mid-clause — fall back to the last completed
+        # sentence and mark the trailing-off honestly.
         if text and not re.search(r"[.!?…][\"””']?\s*$", text):
             ends = [m.end() for m in re.finditer(r"[.!?…](?=\s+[A-Z“\"])", text)]
-            if ends and ends[-1] >= len(text) * 0.5:
+            if ends and ends[-1] >= len(text) * 0.35:
                 text = text[:ends[-1]].rstrip() + " …"
         return text
 
