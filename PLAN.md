@@ -88,6 +88,19 @@ contention. Verdict to follow: probe + `eval_hansard.py` vs the old SFTs.
   device code — the login that worked was `hf auth login` (browser OAuth,
   prints an 8-char code in harness terminals).
 
+**Sentence-conclusion fix (Sep 10, 02:10 ET) — measured, then fixed:**
+- EOS probe (`eos_probe.py`, 12 seeds): the v3 model **never** emits its own
+  `\x00` separator (0/12) or a next-`Q:` scaffold — "conclusion" was never
+  learned from the sentinel-packed stream; every answer ran to the token
+  budget mid-clause. The service's `logits[0,0] = -inf` guard was moot.
+- Fix in `model-service/main.py::generate()`: after the budget, keep decoding
+  in a capped +96-token window to the next terminal punctuation; if the cap
+  exhausts mid-clause, cut at the last completed sentence and append " …".
+- Measured before→after on the same 6 seeds: **3/6 dangling → 6/6 concluded**
+  (live on Railway: 3/3 spot-checked, incl. max_new=40 Faries).
+- Lesson: at 11M, conclusion is a decoding concern, not a grammar one; a real
+  end-of-answer token (trained into the stream) is the next-model fix.
+
 ---
 
 ## 0c. The ~100M scale-up — Sep 9 (forecast before the run)
@@ -251,6 +264,7 @@ model size is an output of the data campaign, not an input.
 | **Open-access university presses** | ✅ measured — uOttawa (bilingual) ✓, U Calgary (CC-BY-NC) ✓, AU Press ✓, BCcampus (browser-only), eCampusOntario (SPA); MB/Memorial TBD | est 0.1–0.4B chars | est 30–130M |
 | Theses (Theses Canada/LAC) | **excluded for now** — author copyright + legacy license = grey; not publishable-clean downstream | — | — |
 | Canada Gazette (Parts I–III) | 🔄 fetching — HTML era 2014→ in flight; pubgc weekly listing harvester ✅ 1,137/1,219 pages, 147.6M chars, 597K PDF links census'd; measured 272K chars/issue (Part I, EN+FR) | est 0.5–0.8B | est 160–260M |
+| **publications.gc.ca catalogue PDFs (CanPub.csv)** | 🔄 **running** (Sep 9, launched from the box — notice→referer GET route cracked, no browser; text-only landing + `--delete-pdf`) — 55,079 PDFs, 1995–2026 + legacy, EN 18.9K / FR 18.8K / both 17.4K; ~34K are House/Senate committee-report PDFs (new register vs transcripts); measured avg 93K text chars/doc → lane est below | est 5.1–5.5B chars | est 1.6–1.8B |
 | **Municipal bylaws (big cities first)** | recon queued — **enumeration READY: 134 council portals from awesome-canada** (agendas/minutes/bylaws per city); consolidated bylaw HTML/PDF; 404s on first guesses | est 0.1–0.4B chars | est 30–130M |
 | **SCT (Specific Claims Tribunal) decisions** | ✅ path FOUND (awesome sweep 2: `decisions.sct-trp.ca/sct/en/nav.do`) — host 403s curl entirely → browser-bucket Decisia (grammar known) | est | est |
 | **Energy/utilities regulators (RÉQ, OEB)** | 🔄 fetching — RÉQ ✅ recon (FR-native, ~2,200 decisions + dossier pièces 10K+); OEB ✅ recon (~539 major decisions, 213K chars avg); AUC skip (AJAX+login), BCUC skip (WAF) — see DISCOVERY-M | est 0.2–0.5B | est 60–160M |
@@ -299,4 +313,5 @@ Printer states it verbatim); ON/QC/MB/NB laws are bilingual by law.
 - **Corpus cap policy (Sep 9):** harvest-to-cap then prune at freeze — QC JD commissions tracks ~3B chars (FR-native, 12,706 sittings ~237K each); Alberta CKAN est ~7B; in-flight lanes run to completion, dedupe/prune at freeze to fit ~5B-token budget; disk (24G free) is the only live constraint, Alberta CKAN is the pruning trigger.
 - **v3b target (Sep 9): 500M @ 1.5 epochs, params = 1.5×D/20 capped at 500M.** Census now 18.33B chars ≈ 5.9B tokens @3.12 chars/token (plan's Sep 8 §2b figures are stale — >3× growth). Requirement: D_honest ≥ 6.7B for full 500M; 'reliable' floor ~5.5–6B. Freeze gate: mini-census + real dedupe with the v3 tokenizer → set params from measured honest D (6.7B→500M, 6.0B→450M, 5.5B→412M, 5.0B→375M, 4.5B→337M). Alberta CKAN (~2B tokens) is the swing variable; queued lanes (budgets/school boards/manuals) are the expansion knob.
 - **v3b target refinement (Sep 9): 500M @ 1 epoch is ideal → D = 10B honest tokens.** Freeze gate becomes params = D_honest/20 (single epoch, never undertrained). Current bank = ~5.9B raw (18.33B chars ÷ 3.12); full fleet landing → ~7–8.5B honest → 350–425M. Full 500M needs the EXPANSION PORTFOLIO (~+2–4B: regulatory decision bodies, securities regulators, school boards, budgets, departmental manuals, municipal fleet) → outer band ~9.5–11B honest. Most likely honest outcome 400–450M @ 1 epoch unless portfolio lands high. 1.5-epoch fallback (params=1.5D/20) stands if D lands <6.7B.
+- **v3b census update (Sep 9 night):** publications.gc.ca CanPub lane cracked and running from the box — 55,079 PDFs, measured avg 93K chars → est +5.1–5.5B chars (~1.7B tok, pre-dedupe). Raw census now ~23.5B chars ≈ 7.5B tokens; D_honest band moves to ~8–9.5B → params ≈ 400–475M @ 1 epoch. 500M @ 1 epoch still gates on the expansion portfolio (or the 1.5-ep fallback). Lane is text-only (delete-pdf), disk-neutral.
 - **Audit Wave-1 builds (Sep 9):** SK Hansard 🔄 (1947→present, ~8-12K docs, tracking 1.5-2B — archive paginated; fetch_sk_hansard.py); Ontario Gazette ✅ done (1,385 issues, 490.7M); NB FR regs ✅ done (1,169 docs, 102.9M — the year-walk fix); OSC 🔄 (15,259 decisions); audit doc DISCOVERY-AUDIT.md ranks the remaining waves (CRTC/CER/Tax/LOP/LègisQuebec via Wayback etc.)
